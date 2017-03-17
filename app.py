@@ -29,8 +29,9 @@ async def start(request):
 async def sign_up(request, invalid=False):
     if request.method == "GET":
         token = uuid4().hex
+        DB.append(token)
         host = request.headers.get('Host')
-        url = pyqrcode.create(f"{host}/login?token={token}")
+        url = pyqrcode.create(f"http://{host}/login?token={token}")
         url.svg(f"static/temp_img/{token}.svg", scale=8)
         template = env.get_template("sign_up.html")
         html_content = template.render(token=token)
@@ -41,23 +42,13 @@ async def sign_up(request, invalid=False):
 async def login(request):
     if request.method == "GET":
         template = env.get_template("login.html")
-        html_content = template.render()
-        return html(html_content)
-    elif request.method == "POST":
-        session = CRUD.login_user(
-            email_or_name=request.form.get("email_or_name", ""),
-            password=request.form.get("password", ""),
-            expires=datetime.datetime.now() + datetime.timedelta(seconds=10)
-        )
-        if session:
-            response = redirect(app.url_for('home'))
-            response.cookies['Token'] = session.token
-            response.cookies['Token']['max-age'] = (
-                session.expires - datetime.datetime.now()
-            ).total_seconds()
-            return response
+        if request.args['token'][0] in DB:
+            r="Hola papu como estás"
         else:
-            return text(':(')
+            r="Mucha pedazo de mierda"
+        html_content = template.render(r=r)
+        return html(html_content)
+
 
 
 if __name__ == "__main__":
